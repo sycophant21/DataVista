@@ -1,69 +1,97 @@
-# DataVista (A DataBase Visualizer)
+# DataVista — A Database Visualizer
 
-## A Web App for users to execute and visulaize their database queries.
+> SQL queries shouldn't require a DBA standing over your shoulder.
 
-### Features
-* Login
-* SignUp
-* See all tables present in the DB
-* Admin can set permissions related to each table for each user.
-* Users can run "Select" queries on tables accessible to them.
+A web application that lets users execute and visualize database queries through a browser — with role-based table access controlled by an admin.
 
-### Built With
-* [Spring Boot](https://en.wikipedia.org/wiki/Spring_Framework)
-* [MySQL](https://en.wikipedia.org/wiki/MySQL)
-* [MongoDB](https://en.wikipedia.org/wiki/MongoDB)
+## What it does
 
-### Dependencies
-* [JUnit]() for testing.
-* [Spring boot starter web](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web) for web.
-* [Spring boot starter jetty](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-jetty) for server.
-* [JSTL](https://mvnrepository.com/artifact/javax.servlet.jsp.jstl/jstl-api) and [taglibs](https://mvnrepository.com/artifact/org.apache.taglibs/taglibs-standard-impl) for [JSP](https://en.wikipedia.org/wiki/Jakarta_Server_Pages)
-* [JWT](https://en.wikipedia.org/wiki/JSON_Web_Token) for authentication (oatuh0)
-* [tomcat-jdbc](https://tomcat.apache.org/tomcat-7.0-doc/jdbc-pool.html) for database connection pool.
-* [MySQL connnector](https://dev.mysql.com/downloads/connector/j/) and [Spring boot starter jdbc](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-jdbc) for jdbc connection and queries.
+- **Login / Sign Up** with JWT-based session cookies
+- **Table browser**: see all tables the current user is permitted to access
+- **Query runner**: execute `SELECT` queries on accessible tables; results displayed as an HTML table
+- **Admin panel**: grant or revoke per-table permissions (Read, Insert, Update, Delete) per user
 
-### Getting started
-* Set up a datasource for jdbc to connect with in jdbcConfig class.
-* Set up a cookie name in the login controller and a session timeout time.
-* Set the table names and database names in SQLHandler and QueryHandler classes.
-### Table structures
-1. <img width="290" alt="Screenshot 2021-03-29 at 6 35 37 PM" src="https://user-images.githubusercontent.com/69719655/112841189-d3b4eb00-90bd-11eb-9769-32d842295f96.png">
+## Built with
 
-* Permissions Table
-  * Columns
-    * "Email" - varchar(255)
-    * "TableName" - varchar(255)
-    * "Insert" - boolean
-    * "Read" - boolean
-    * "Update" - boolean
-    * "Delete" - boolean
-2. <img width="160" alt="Screenshot 2021-03-29 at 6 44 44 PM" src="https://user-images.githubusercontent.com/69719655/112842142-e11ea500-90be-11eb-9392-00d7c636e2e2.png">
+- [Spring Boot](https://spring.io/projects/spring-boot) — web framework
+- [MySQL](https://www.mysql.com/) — relational data store
+- [MongoDB](https://www.mongodb.com/) — supplementary NoSQL store
+- [JSP](https://jakarta.ee/specifications/pages/) + [JSTL](https://jakarta.ee/specifications/tags/) — server-side templating
 
-* Users Table
-  * Columns
-    * "Email" - varchar(255)
-    * "Password" - vachar(255)
-    * "isAdmin" - boolean
+## Dependencies
 
+- `spring-boot-starter-web` — HTTP layer
+- `spring-boot-starter-jetty` — embedded Jetty server
+- `spring-boot-starter-jdbc` — JDBC connection management
+- `tomcat-jdbc` — JDBC connection pool
+- `mysql-connector-java` — MySQL driver
+- `jwt` (auth0) — JSON Web Token authentication
+- `JSTL` + `taglibs-standard-impl` — JSP tag libraries
+- `JUnit` — unit testing
 
-### Implementation
-* SignUp Controller
-  - Inserts a user in the user table keeping the isAdmin value false by default.
-* Login Controller
-  - Gets a user object from the servlet and sets a cookie for a session and authenticates the user.
-* Home Controller
-  - Gets all the table names from the database and sends it to the jsp.
-* Table Controller
-  - Gets the control when a table name is clicked upon and extracts the table name and finds if the table is accessible to the current user.
-  - Gives the control back to user to execute a query is table is accessible or return unatuthorised if not.
-  - Executes the query given by the user and returns the data received in the form of a table object and is displayed on the screen in a ***table*** tag.
-* QueryBuilder
-  - Takes variables like select, from, where, limit etc and builds a query in sql syntax.
-* SQL Handler
-  - Executes queries and creates objects like user, table, row etc.
+## Database schema
 
-### In Development Phase
-* Mongo Query Builder
-* Assigning Permissions for tables to users by admin.
-* UI
+**users table**
+
+| Column    | Type         |
+|-----------|--------------|
+| Email     | VARCHAR(255) |
+| Password  | VARCHAR(255) |
+| isAdmin   | BOOLEAN      |
+
+**permissions table**
+
+| Column    | Type         |
+|-----------|--------------|
+| Email     | VARCHAR(255) |
+| TableName | VARCHAR(255) |
+| Insert    | BOOLEAN      |
+| Read      | BOOLEAN      |
+| Update    | BOOLEAN      |
+| Delete    | BOOLEAN      |
+
+## Getting started
+
+### Prerequisites
+
+- Java 8+
+- Gradle 6+
+- MySQL running locally (default port 3306)
+- MongoDB running locally (default port 27017)
+
+### Configure
+
+1. Open `DBVisualizer/src/main/java/com/test/config/JDBCConfig.java` — set your MySQL host, database name, username, and password.
+2. Create the `users` and `permissions` tables (DDL above) in your MySQL database.
+3. Insert at least one admin user (set `isAdmin = true`).
+
+### Build & run
+
+```bash
+cd DBVisualizer
+./gradlew bootRun
+```
+
+Or build a JAR:
+
+```bash
+./gradlew clean build
+java -jar build/libs/DBVisualizer-*.jar
+```
+
+The app starts on `http://localhost:8080` by default.
+
+## How it works
+
+- **SignUpController**: inserts a new user with `isAdmin = false`
+- **LoginController**: validates credentials, sets a JWT session cookie
+- **HomeController**: fetches all table names from MySQL; JSP renders the list
+- **TableController**: checks permissions for the requested table; if granted, executes the user's query via `QueryBuilder` → `SQLHandler` and returns results
+- **QueryBuilder**: assembles parameterized SQL from `select`, `from`, `where`, `limit` inputs
+- **SQLHandler**: executes queries; maps rows to `Table`/`Row` domain objects
+
+## In development
+
+- MongoDB query builder
+- Admin UI for permission assignment
+- Full UI polish
